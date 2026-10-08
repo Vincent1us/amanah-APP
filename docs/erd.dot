@@ -1,0 +1,61 @@
+digraph ERD {
+  rankdir=LR; splines=true; nodesep=0.8; ranksep=1.4;
+  graph [fontname="Helvetica", bgcolor="white", pad=0.4, label="ERD - Amanah Auth API", labelloc=t, fontsize=20];
+  node  [shape=plain, fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=10, color="#334155"];
+
+  users [label=<
+  <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+    <TR><TD COLSPAN="3" BGCOLOR="#1e1b4b"><FONT COLOR="white"><B>users</B></FONT></TD></TR>
+    <TR><TD>PK</TD><TD ALIGN="LEFT">id</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">VARCHAR(100)</TD></TR>
+    <TR><TD>UQ</TD><TD ALIGN="LEFT">email</TD><TD ALIGN="LEFT">VARCHAR(191)</TD></TR>
+    <TR><TD>UQ</TD><TD ALIGN="LEFT">phone (E.164, null)</TD><TD ALIGN="LEFT">VARCHAR(20)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">password (bcrypt)</TD><TD ALIGN="LEFT">VARCHAR(255)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">email_verified_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">phone_verified_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">last_login_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">created_at / updated_at</TD><TD ALIGN="LEFT">TIMESTAMP</TD></TR>
+  </TABLE>>];
+
+  otp_codes [label=<
+  <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+    <TR><TD COLSPAN="3" BGCOLOR="#0f766e"><FONT COLOR="white"><B>otp_codes</B></FONT></TD></TR>
+    <TR><TD>PK</TD><TD ALIGN="LEFT">id</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD>FK</TD><TD ALIGN="LEFT">user_id (null)</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">channel</TD><TD ALIGN="LEFT">ENUM(email, whatsapp)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">destination</TD><TD ALIGN="LEFT">VARCHAR(191)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">purpose</TD><TD ALIGN="LEFT">ENUM(login, reset_password)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">code_hash (HMAC-SHA256)</TD><TD ALIGN="LEFT">CHAR(64)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">attempts</TD><TD ALIGN="LEFT">TINYINT UNSIGNED</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">expires_at</TD><TD ALIGN="LEFT">TIMESTAMP</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">resend_available_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">verified_at / consumed_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">ip_address</TD><TD ALIGN="LEFT">VARCHAR(45) null</TD></TR>
+  </TABLE>>];
+
+  password_resets [label=<
+  <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+    <TR><TD COLSPAN="3" BGCOLOR="#b45309"><FONT COLOR="white"><B>password_resets</B></FONT></TD></TR>
+    <TR><TD>PK</TD><TD ALIGN="LEFT">id</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD>FK</TD><TD ALIGN="LEFT">user_id</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD>UQ</TD><TD ALIGN="LEFT">token_hash (SHA-256)</TD><TD ALIGN="LEFT">CHAR(64)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">expires_at</TD><TD ALIGN="LEFT">TIMESTAMP</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">used_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+  </TABLE>>];
+
+  personal_access_tokens [label=<
+  <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+    <TR><TD COLSPAN="3" BGCOLOR="#475569"><FONT COLOR="white"><B>personal_access_tokens (Sanctum)</B></FONT></TD></TR>
+    <TR><TD>PK</TD><TD ALIGN="LEFT">id</TD><TD ALIGN="LEFT">BIGINT UNSIGNED</TD></TR>
+    <TR><TD>FK*</TD><TD ALIGN="LEFT">tokenable_type, tokenable_id</TD><TD ALIGN="LEFT">polymorphic ke users.id</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">name</TD><TD ALIGN="LEFT">VARCHAR(255)</TD></TR>
+    <TR><TD>UQ</TD><TD ALIGN="LEFT">token (hash)</TD><TD ALIGN="LEFT">VARCHAR(64)</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">abilities</TD><TD ALIGN="LEFT">TEXT null</TD></TR>
+    <TR><TD></TD><TD ALIGN="LEFT">last_used_at / expires_at</TD><TD ALIGN="LEFT">TIMESTAMP null</TD></TR>
+  </TABLE>>];
+
+  users -> otp_codes [label="1 : N  (ON DELETE CASCADE)", arrowhead=crow, arrowtail=tee, dir=both];
+  users -> password_resets [label="1 : N  (ON DELETE CASCADE)", arrowhead=crow, arrowtail=tee, dir=both];
+  users -> personal_access_tokens [label="1 : N  (polymorphic)", arrowhead=crow, arrowtail=tee, dir=both];
+}

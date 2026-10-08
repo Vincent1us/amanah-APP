@@ -1,0 +1,417 @@
+openapi: 3.0.3
+info:
+  title: Amanah Auth API
+  version: 1.0.0
+  description: 'REST API autentikasi Amanah: Login Email, Login WhatsApp + OTP, Register,
+    Lupa Password + OTP.
+
+
+    Semua error memakai format `{success:false, message, code, errors?, meta?}`.'
+servers:
+- url: http://localhost:8000/api/v1
+  description: Lokal
+tags:
+- name: Register
+- name: Login Email
+- name: Login WhatsApp
+- name: Lupa Password
+- name: OTP
+- name: Akun
+- name: Sistem
+paths:
+  /auth/register:
+    post:
+      tags:
+      - Register
+      summary: Buat akun baru
+      operationId: register
+      responses:
+        '201':
+          description: Pendaftaran berhasil (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: VALIDATION_ERROR - email/WA sudah terdaftar, password lemah,
+            dll.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: TOO_MANY_REQUESTS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                name: Budi Santoso
+                email: budi.santoso@gmail.com
+                phone: 812-3456-7890
+                password: Passw0rd!Strong
+                password_confirmation: Passw0rd!Strong
+                terms_accepted: true
+  /auth/login:
+    post:
+      tags:
+      - Login Email
+      summary: Login email & kata sandi
+      operationId: login
+      responses:
+        '200':
+          description: Login berhasil (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: INVALID_CREDENTIALS (meta.remaining_attempts)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: LOGIN_LOCKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                email: budi.santoso@gmail.com
+                password: Password123!
+                remember_me: true
+  /auth/login/whatsapp/request-otp:
+    post:
+      tags:
+      - Login WhatsApp
+      summary: Kirim kode OTP ke WhatsApp
+      operationId: wa_request
+      responses:
+        '200':
+          description: OTP dikirim (respons generik)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: OTP_RESEND_TOO_SOON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                phone: 812-3456-7890
+  /auth/login/whatsapp/verify-otp:
+    post:
+      tags:
+      - Login WhatsApp
+      summary: Verifikasi OTP & login
+      operationId: wa_verify
+      responses:
+        '200':
+          description: Login berhasil (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: OTP_INVALID | OTP_EXPIRED | OTP_NOT_FOUND | VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: OTP_ATTEMPTS_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                phone: 812-3456-7890
+                code: '{{otp_code}}'
+                remember_me: false
+  /auth/forgot-password:
+    post:
+      tags:
+      - Lupa Password
+      summary: Kirim OTP lupa kata sandi (email / whatsapp)
+      operationId: forgot
+      responses:
+        '200':
+          description: OTP dikirim (respons generik)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: OTP_RESEND_TOO_SOON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                method: email
+                email: budi.santoso@gmail.com
+  /auth/forgot-password/verify-otp:
+    post:
+      tags:
+      - Lupa Password
+      summary: Verifikasi OTP => reset_token
+      operationId: forgot_verify
+      responses:
+        '200':
+          description: Terverifikasi (reset_token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: OTP_INVALID | OTP_EXPIRED | OTP_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: OTP_ATTEMPTS_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                method: email
+                email: budi.santoso@gmail.com
+                code: '{{otp_code}}'
+  /auth/reset-password:
+    post:
+      tags:
+      - Lupa Password
+      summary: Atur kata sandi baru & login
+      operationId: reset
+      responses:
+        '200':
+          description: Kata sandi diubah (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: RESET_TOKEN_INVALID | VALIDATION_ERROR (termasuk password sama
+            dengan yang lama)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                reset_token: '{{reset_token}}'
+                password: NewPassw0rd!
+                password_confirmation: NewPassw0rd!
+  /auth/otp/resend:
+    post:
+      tags:
+      - OTP
+      summary: Kirim ulang kode OTP
+      operationId: resend
+      responses:
+        '200':
+          description: OTP baru dikirim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '422':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: OTP_RESEND_TOO_SOON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                purpose: reset_password
+                channel: email
+                destination: budi.santoso@gmail.com
+  /auth/me:
+    get:
+      tags:
+      - Akun
+      summary: Profil user yang login
+      operationId: me
+      responses:
+        '200':
+          description: Data user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+  /auth/logout:
+    post:
+      tags:
+      - Akun
+      summary: Logout (cabut token saat ini)
+      operationId: logout
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: UNAUTHENTICATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+  /health:
+    get:
+      tags:
+      - Sistem
+      summary: Health check
+      operationId: health
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 'Token dari login/register: `Authorization: Bearer <access_token>`'
+  schemas:
+    User:
+      type: object
+      example:
+        id: 1
+        name: Budi Santoso
+        email: budi.santoso@gmail.com
+        phone: '+6281234567890'
+        email_verified: true
+        phone_verified: true
+        created_at: '2026-10-07T04:00:00+00:00'
+    Token:
+      type: object
+      example:
+        access_token: 1|abcdef...
+        token_type: Bearer
+        expires_at: '2026-10-08T04:00:00+00:00'
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        code:
+          type: string
+          example: OTP_INVALID
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        meta:
+          type: object
+          properties:
+            remaining_attempts:
+              type: integer
+            retry_after:
+              type: integer
+              description: detik

@@ -143,3 +143,6 @@ Setiap token punya `expires_at` (24 jam, atau 30 hari bila `remember_me`).
 - Reset token & access token: hanya hash yang disimpan.
 - OTP kedaluwarsa 5 menit, maks 5 percobaan, sekali pakai, OTP lama otomatis hangus saat OTP baru dibuat.
 - Pembersihan data: OTP/token kedaluwarsa boleh dihapus berkala (mis. `php artisan model:prune` / scheduler) - opsional.
+
+## foto database
+![screenshoot database phpmyadmin](image database/Screenshot 2026-10-09 070803.png)
